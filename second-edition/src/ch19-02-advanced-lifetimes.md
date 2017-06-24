@@ -295,6 +295,23 @@ However, using no lifetime bounds at all gives an error because Rust doesn't
 know how long the generic type `T` will live:
 
 ```text
+error[E0106]: missing lifetime specifier
+ --> <anon>:1:15
+  |
+1 | struct Ref<T>(&T);
+  |               ^ expected lifetime parameter
+```
+
+This is the same error that we'd get if we filled in `T` with a concrete type,
+like `struct Ref(&i32)`; all references in struct definitions need a lifetime
+parameter. However, because we have a generic type parameter, we can't add a
+lifetime parameter in the same way. Defining `Ref` as `struct Ref<'a, T>(&'a T)`
+will result in the error below because Rust can't determine that `T` lives long
+enough. Since `T` can be any type, `T` could itself be a reference or it could
+be a type that holds one or more references, each of which have their own
+lifetimes.
+
+```text
 error[E0309]: the parameter type `T` may not live long enough
  --> <anon>:2:19
   |
@@ -308,15 +325,6 @@ note: ...so that the reference type `&'a T` does not outlive the data it points 
 2 | struct Ref<'a, T>(&'a T);
   |                   ^^^^^^
 ```
-
-This is the same error that we'd get if we filled in `T` with a concrete type,
-like `struct Ref(&i32)`; all references in struct definitions need a lifetime
-parameter. However, because we have a generic type parameter, we can't add a
-lifetime parameter in the same way. Defining `Ref` as `struct Ref<'a>(&'a T)`
-will result in an error because Rust can't determine that `T` lives long
-enough. Since `T` can be any type, `T` could itself be a reference or it could
-be a type that holds one or more references, each of which have their own
-lifetimes.
 
 Rust helpfully gave us good advice on how to specify the lifetime parameter in
 this case:
